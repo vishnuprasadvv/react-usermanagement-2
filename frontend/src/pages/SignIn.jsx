@@ -8,10 +8,15 @@ import { toast } from 'react-toastify';
 function SignIn() {
 
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
+  const [inputError, setInputError] = useState({
+    email: '',
+    password: '',
+  })
   const [error, setError] = useState('')
-  const [emailError, setEmailError] = useState('')
   const dispatch = useDispatch();
   const {userInfo} = useSelector((state) => state.auth)
 
@@ -21,24 +26,48 @@ function SignIn() {
     }
   },[navigate, userInfo]) 
 
+  //handle input changes 
+  const handleChange= (e) => {
+    setFormData({...formData, [e.target.name]: e.target.value})
+    setInputError({...inputError, [e.target.name] : ''})
+  }
+
+  const validatForm = () => {
+    let isValid = true;
+    let tempErrors = {...inputError};
+
+    // email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(formData.email)){
+      tempErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if(formData.password.length < 6){
+      tempErrors.password = 'Password length must be 6 characters long';
+      isValid = false;
+    }
+
+    setInputError(tempErrors);
+    return isValid;
+  }
+
   const submitHandler =async (e) =>{
     e.preventDefault();
     try {
-      if(email.length ===0 ){
-        setEmailError('Enter email')
-      }else{
-        setEmailError('')
-        const res = await axios.post('/api/users/auth' ,{email,password})
+       if(validatForm()){
+        const res = await axios.post('/api/users/auth' ,formData)
         console.log(res.data)
         dispatch(setCredentials(res.data))
         setError('')
         toast.success('Login success')
         navigate('/profile')
-      }
+       }
+        
+      
     } catch (error) {
       toast.error(error.response.data)
       setError(error.response.data)
-      setEmailError('')
     }
   }
 
@@ -50,17 +79,23 @@ function SignIn() {
       onSubmit={submitHandler} >
 
         <input type="email" placeholder='Email'
-        onChange={(e)=> setEmail(e.target.value)}
+        onChange={handleChange}
         id='email'
+        name='email'
+        value={formData.email}
         className='bg-slate-100 p-3 rounded-lg'
+        required
          />
-        {emailError &&  <span className='text-red-700'>{  emailError}</span> }
+        {inputError.email && <p style={{ color: 'red' }}>{inputError.email}</p>}
 
         <input type="password" placeholder='Password'
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={handleChange}
         id='password' 
+        name='password'
+        value={formData.password}
         className='bg-slate-100 p-3 rounded-lg'
         required />
+         {inputError.password && <p style={{ color: 'red' }}>{inputError.password}</p>}
 
         <button  className='bg-slate-700 text-white p-3
         rounded-lg uppercase hover:opacity-95 disabled:opacity-80' > Sign In</button>

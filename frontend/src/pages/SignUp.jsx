@@ -8,10 +8,19 @@ import {toast} from 'react-toastify'
 function SignUp() {
 
   const navigate = useNavigate();
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirm_password : ''
+  })
+  const [inputError, setInputError] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirm_password : ''
+  })
 
   const {userInfo} = useSelector((state) => state.auth)
 
@@ -21,22 +30,60 @@ function SignUp() {
     }
   },[navigate, userInfo]) 
 
+
+
+  const handleChange =(e) => {
+    setFormData({...formData, [e.target.id] :e.target.value })
+    //remove error on input
+   setInputError({...inputError, [e.target.name] : ''})
+   
+  }
+
+  const validatForm = () => {
+    let isValid = true;
+    let tempErrors = {...inputError};
+    
+    //username 
+    if(formData.username.trim().length < 3){
+      tempErrors.username = 'Username must be atleast 3 characters long';
+      isValid = false;
+    }
+
+    // email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(formData.email)){
+      tempErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if(formData.password.length < 6){
+      tempErrors.password = 'Password length must be 6 characters long';
+      isValid = false;
+    }
+
+    if(formData.password !== formData.confirm_password){
+      tempErrors.confirm_password = 'Password do not match';
+      isValid = false;
+    }
+    setInputError(tempErrors);
+    return isValid;
+  }
+
   const submitHandler =async (e) =>{
     e.preventDefault();
+    
     try {
-      if(email.length ===0 ){
-        setEmailError('Enter email')
-      }else if(username.length === 0 ){
-        setUsernameError('Enter username')
-      }else{
-        setEmailError('')
-        setUsernameError('')
-        const res = await axios.post('/api/users' ,{username, email,password})
+      if(validatForm()){
+        
+        const res = await axios.post('/api/users' ,formData)
         console.log(res.data)
         setError('')
         toast.success('new user registered successfully')
         navigate('/signin')
+
       }
+        
+      
     } catch (error) {
       toast.error(error?.response?.data || error.message)
       setError(error?.response?.data || error.message)
@@ -53,19 +100,36 @@ function SignUp() {
       onSubmit={submitHandler} >
 
         <input type="text" placeholder='Username'
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={handleChange}
+        name='username'
+        value={formData.username}
         id='username'  required
         className='bg-slate-100 p-3 rounded-lg'  />
+        {inputError.username && <p style={{ color: 'red' }}>{inputError.username}</p>}
         
         <input type="email" placeholder='Email'
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={handleChange}
+        name='email'
+        value={formData.email}
         id='email' required
         className='bg-slate-100 p-3 rounded-lg' />
+        {inputError.email && <p style={{ color: 'red' }}>{inputError.email}</p>}
 
         <input type="password" placeholder='Password'
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={handleChange}
+        name='password'
+        value={formData.password}
         id='password'  required
         className='bg-slate-100 p-3 rounded-lg' />
+        {inputError.password && <p style={{ color: 'red' }}>{inputError.password}</p>}
+
+        <input type="password" placeholder='Confirm Password'
+        onChange={handleChange}
+        name='confirm_password'
+        value={formData.confirm_password}
+        id='confirm_password'  required
+        className='bg-slate-100 p-3 rounded-lg' />
+        {inputError.confirm_password && <p style={{ color: 'red' }}>{inputError.confirm_password}</p>}
 
         <button  className='bg-slate-700 text-white p-3
         rounded-lg uppercase hover:opacity-95 disabled:opacity-80' > Sign Up </button>
